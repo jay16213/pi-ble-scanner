@@ -23,7 +23,9 @@ struct pi
 {
     int socket;
     int cur_people;
-    char LogFile[40];
+    int piID;
+    char LogFile[100];
+    char uuidList[100][40];
     FILE *file;
 };
 
@@ -35,13 +37,15 @@ int main(int argc,char**argv)
     int maxindex;
     int s_lisfd;
     int s_confd;
+    int nowClientNum;
     int check_flag;
     struct pi client[FD_SETSIZE];
-    //int pi[FD_SETSIZE];
     char recevBuffer[MAXLEN];
     struct sockaddr_in servaddr;
     struct sockaddr_in cliaddr;
+    FILE *nowLog;
     fd_set rset,iniset;
+    nowClientNum=0;
     if(argc !=2)
     {
         fprintf(stderr,"Useage: ./C_socketServer <port>\n");
@@ -98,15 +102,21 @@ int main(int argc,char**argv)
             }
             for(i=0;i<FD_SETSIZE;++i)
             {
+                if(client[i].socket>0)continue;
                 char *str;
                 int PIid;
                 time_t rawtime;
                 client[i].socket=s_confd;
-                printf("One pi connect to server!\n");
+                nowClientNum++;
+                printf("One beacon scanner connect to server!\n");
                 read(client[i].socket,recevBuffer,MAXLEN);
                 str=strtok(recevBuffer," \n");
                 PIid=atoi(str);
-                snprintf(client[i].LogFile,40,"%d_beacon_scannerlog.txt",PIid);
+                client[i].piID=PIid;
+                printf("id is %d %d\n",PIid,i);
+                printf("start to write log file\n");
+                printf("------------------------\n");
+                snprintf(client[i].LogFile,40,"%d_beacon_scannerlog.txt",i);
                 client[i].file=fopen(client[i].LogFile,"w");
                 time (&rawtime);
                 fprintf(client[i].file,"Connect at %s", ctime (&rawtime));
@@ -132,7 +142,10 @@ int main(int argc,char**argv)
                 ssize_t n;
                 if((n=read(sockfd,recevBuffer,MAXLEN))==0)
                 {
-                    printf("leave\n");
+                    
+                    printf("%d beacon scanner leave\n",client[i].piID);
+                    printf("close log file\n");
+                    printf("------------------------\n");
                     client[i].socket=-1;
                     if(i==maxindex)
                     {
@@ -146,20 +159,48 @@ int main(int argc,char**argv)
                         }
                         if(j==0)maxindex=-1;
                     }
+                    nowClientNum--;
                     close(sockfd);
-                    //fclose(client[i].file);
                     FD_CLR(sockfd,&iniset);
                 }
                 else
                 {
                     char *str;
+                    int j;
+                    int k;
+                    int nowPeople=0;
                     time_t rawtime;
                     client[i].file=fopen(client[i].LogFile,"a");
                     recevBuffer[n]=0;
                     str=strtok(recevBuffer," \n");
-                    str=strtok(NULL," \n");
+                    client[i].cur_people=atoi(str);
+                    nowLog=fopen("scan_result.log","w");
+                    for(j=0;j<client[i].cur_people;j++)
+                    {
+                        str=strtok(NULL," \n");
+                        strcpy(client[i].uuidList[j],str);
+                    }
+                    
+                    for(k=0;k<=maxindex;k++)
+                    {
+                        if(i==k)continue;
+                        printf("%d\n",client[k].cur_people);
+                        for(j=0;j<client[i].cur_people;j++)
+                        {
+                            
+                            int p;
+                            for(p=0;p<client[k].cur_people;p++)
+                            {
+                                if(strcmp(client[i].uuidList[j],client[k].uuidList[p])==0)nowPeople++;
+                            }
+                        }       
+                        break;
+                    }
+                    fprintf(nowLog,"%d\n",nowPeople);
+                    fclose(nowLog);
                     time (&rawtime);
-                    fprintf(client[i].file,"Current %d people at %s",atoi(str),ctime (&rawtime));
+                    printf("current %d \n",nowPeople);
+                    fprintf(client[i].file,"Current %d people at %s",nowPeople,ctime (&rawtime));
                     fclose(client[i].file);
                 }
                 if(--nready<=0)break;
