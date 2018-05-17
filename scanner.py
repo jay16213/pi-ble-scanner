@@ -13,17 +13,15 @@ def callback(bt_addr, rssi, packet, additional_info):
     uuid = additional_info['uuid']
 
     global numOfPeople
-
+    global validUUID
     if uuid in validUUID:
-        print("legal uuid: {}".format(uuid))
         # if this uuid is already scanned, ignore it
         if uuid not in scanList:
+            print("legal uuid: {}".format(uuid))
             scanList.append(uuid)
             numOfPeople += 1
     else:
         print("illegal uuid: {}".format(uuid))
-
-    # fout.write("uuid: {}\n".format(uuid))
 
 def getValidUUID():
     print("loading legal uuid")
@@ -42,24 +40,24 @@ if __name__=='__main__':
     sock.connect((args.addr, args.port))
 
     numOfPeople = 0
-    global validUUID
     validUUID = getValidUUID()
     scanner = BeaconScanner(callback)
     print("start scan")
     scanner.start()
     while True:
         try:
-                fout = open("scan.txt", "w")
                 print("----------")
                 numOfPeople = 0
                 scanList = []
+                time.sleep(2)
 
-                time.sleep(1)
                 print("scanned: {}".format(numOfPeople))
-                fout.write("{}\n".format(numOfPeople))
-                fout.close()
+
+                # convert list of uuid to a long string, separate
+                uuid_list = ' '.join(scanList)
+
                 # fix msg to 1024 bytes and encode in ascii
-                msg = str("{} {}".format(args.id, numOfPeople)).ljust(1024, '\x00').encode("ascii")
+                msg = str("{} {}".format(len(scanList), uuid_list)).ljust(1024, '\x00').encode("ascii")
                 sock.send(msg)
 
         except KeyboardInterrupt: # if user press ctrl-C => exit the program
