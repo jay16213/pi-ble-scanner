@@ -142,7 +142,7 @@ int main(int argc,char**argv)
                 ssize_t n;
                 if((n=read(sockfd,recevBuffer,MAXLEN))==0)
                 {
-                    
+
                     printf("%d beacon scanner leave\n",client[i].piID);
                     printf("close log file\n");
                     printf("------------------------\n");
@@ -155,9 +155,10 @@ int main(int argc,char**argv)
                             if(client[j].socket>0)
                             {
                                 maxindex=j;
+                                break;
                             }
                         }
-                        if(j==0)maxindex=-1;
+                        if(j==-1)maxindex=-1;
                     }
                     nowClientNum--;
                     close(sockfd);
@@ -180,26 +181,26 @@ int main(int argc,char**argv)
                         str=strtok(NULL," \n");
                         strcpy(client[i].uuidList[j],str);
                     }
-                    
+
                     for(k=0;k<=maxindex;k++)
                     {
                         if(i==k)continue;
-                        printf("%d\n",client[k].cur_people);
+                        //printf("%d\n",client[k].cur_people);
                         for(j=0;j<client[i].cur_people;j++)
                         {
-                            
+
                             int p;
                             for(p=0;p<client[k].cur_people;p++)
                             {
                                 if(strcmp(client[i].uuidList[j],client[k].uuidList[p])==0)nowPeople++;
                             }
-                        }       
+                        }
                         break;
                     }
                     fprintf(nowLog,"%d\n",nowPeople);
                     fclose(nowLog);
                     time (&rawtime);
-                    printf("current %d \n",nowPeople);
+                    printf("current people num :%d \n",nowPeople);
                     fprintf(client[i].file,"Current %d people at %s",nowPeople,ctime (&rawtime));
                     fclose(client[i].file);
                 }
@@ -207,7 +208,7 @@ int main(int argc,char**argv)
             }
 
         }
-        
+
     }
 
 }
